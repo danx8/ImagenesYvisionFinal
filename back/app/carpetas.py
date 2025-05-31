@@ -1,12 +1,15 @@
-from flask import Blueprint, request, jsonify, send_file
+from flask import Blueprint, request, jsonify, send_file, Response
 import os
 from werkzeug.utils import secure_filename
 import cv2
 import numpy as np
 import io
 from .cargarModelo import cargarModelo
-from .reconocimiento import procesar_carpeta_con_arduino
+from .reconocimiento import procesar_carpeta_con_arduino, ARDUINO_URL
 import base64
+import json
+import requests
+import time
 
 carpetas = Blueprint('carpetas', __name__)
 
@@ -176,17 +179,76 @@ def procesar_imagen():
     except Exception as e:
         return jsonify({'error': f'Error al procesar la imagen: {str(e)}'}), 500
 
-@carpetas.route('/reconocer-carpeta', methods=['POST'])
+@carpetas.route('/reconocer-carpeta', methods=['GET'])
 def reconocer_carpeta():
     try:
-        data = request.get_json()
-        nombre_carpeta = data.get('nombre_carpeta')
+        nombre_carpeta = request.args.get('nombre_carpeta')
         if not nombre_carpeta:
             return jsonify({'error': 'No se especificó la carpeta'}), 400
 
-        imagenes_bytes = procesar_carpeta_con_arduino(nombre_carpeta)
-        imagenes_base64 = [base64.b64encode(img_bytes).decode('utf-8') for img_bytes in imagenes_bytes]
-        return jsonify({'imagenes': imagenes_base64}), 200
+        def generate():
+            carpeta_imagenes = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'imagenes', nombre_carpeta)
+            if not os.path.exists(carpeta_imagenes):
+                yield f"data: {json.dumps({'error': f'La carpeta {carpeta_imagenes} no existe'})}\n\n"
+                return
+
+            archivos = [f for f in os.listdir(carpeta_imagenes) if f.lower().endswith(('.jpg', '.jpeg', '.png'))]
+            archivos.sort()
+
+            model = cargarModelo()
+            session = requests.Session()
+
+            for nombre_archivo in archivos:
+                ruta_imagen = os.path.join(carpeta_imagenes, nombre_archivo)
+                image = cv2.imread(ruta_imagen)
+                if image is None:
+                    continue
+
+                image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+                results = model(image_rgb)
+                result = results[0]
+                imagen_anotada = result.plot()
+
+                # Obtener las clases detectadas
+                clases_detectadas = set()
+                for box in result.boxes:
+                    nombre_clase = result.names[box.cls.item()]
+                    confianza = box.conf.item()
+                    print(f"Clase: {nombre_clase} - Confianza: {confianza:.2f}")
+                    clases_detectadas.add(nombre_clase)
+
+                # Encender LEDs para las clases detectadas
+                for clase in clases_detectadas:
+                    try:
+                        response = session.get(ARDUINO_URL + clase)
+                        print(f"Enviando señal para {clase}: {response.status_code}")
+                    except Exception as e:
+                        print(f"Error al enviar petición para {clase}: {e}")
+
+                # Convertir la imagen procesada a base64
+                _, buffer = cv2.imencode('.jpg', imagen_anotada)
+                img_base64 = base64.b64encode(buffer).decode('utf-8')
+
+                # Enviar la imagen y las clases detectadas
+                data = {
+                    'imagen': img_base64,
+                    'clases': list(clases_detectadas),
+                    'nombre_archivo': nombre_archivo
+                }
+                yield f"data: {json.dumps(data)}\n\n"
+
+                # Mantener encendido un breve momento
+                time.sleep(1)
+
+                # Apagar LEDs
+                try:
+                    response = session.get(ARDUINO_URL + "off")
+                    print(f"Apagando LEDs: {response.status_code}")
+                except Exception as e:
+                    print(f"Error al enviar petición para apagar LEDs: {e}")
+
+        return Response(generate(), mimetype='text/event-stream')
+
     except Exception as e:
         return jsonify({'error': f'Error al procesar la carpeta: {str(e)}'}), 500
 
@@ -202,3 +264,24 @@ def listar_carpetas_imagenes():
     except Exception as e:
         print(f"Error al listar carpetas: {e}")
         return jsonify({'error': f'Error al listar carpetas: {str(e)}'}), 500
+
+@carpetas.route('/listar-imagenes/<nombre_carpeta>', methods=['GET'])
+def listar_imagenes(nombre_carpeta):
+    try:
+        carpeta_imagenes = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'imagenes', nombre_carpeta)
+        if not os.path.exists(carpeta_imagenes):
+            return jsonify({'error': f'La carpeta {carpeta_imagenes} no existe'}), 404
+
+        archivos = [f for f in os.listdir(carpeta_imagenes) if f.lower().endswith(('.jpg', '.jpeg', '.png'))]
+        archivos.sort()
+
+        imagenes_base64 = []
+        for nombre_archivo in archivos:
+            ruta_imagen = os.path.join(carpeta_imagenes, nombre_archivo)
+            with open(ruta_imagen, 'rb') as img_file:
+                img_base64 = base64.b64encode(img_file.read()).decode('utf-8')
+                imagenes_base64.append(img_base64)
+
+        return jsonify({'imagenes': imagenes_base64}), 200
+    except Exception as e:
+        return jsonify({'error': f'Error al listar imágenes: {str(e)}'}), 500

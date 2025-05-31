@@ -3,7 +3,7 @@ import Landing from './Landing';
 import UnoSolo from './UnoSolo';
 import Home from './Home';
 import Arduino from './Arduino';
-
+import Vista1Persona from './Vista1Persona';
 function App() {
   return (
     <Router>
@@ -31,6 +31,9 @@ function App() {
               <li className="nav-item">
                 <Link to="/arduino" className="nav-link">Arduino</Link>
               </li>
+              <li className="nav-item">
+                <Link to="/vista1persona" className="nav-link">Vista 1 Persona</Link>
+              </li>
             </ul>
           </div>
         </div>
@@ -43,7 +46,7 @@ function App() {
           <Route path="/subir-video" element={<Landing />} />
           <Route path="/unoSolo" element={<UnoSolo />} />
           <Route path="/arduino" element={<Arduino />} />
-
+          <Route path="/vista1persona" element={<Vista1Persona />} />
 
 
           

@@ -1,18 +1,17 @@
 // Arduino.jsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 
 function Arduino() {
   const [carpetas, setCarpetas] = useState([]);
   const [carpetaSeleccionada, setCarpetaSeleccionada] = useState('');
-  const [imagenes, setImagenes] = useState([]);
-  const [indice, setIndice] = useState(0);
-  const [reproduciendo, setReproduciendo] = useState(false);
+  const [imagenActual, setImagenActual] = useState(null);
+  const [clasesDetectadas, setClasesDetectadas] = useState([]);
   const [mensaje, setMensaje] = useState('');
-  const [timerId, setTimerId] = useState(null);
+  const [eventSource, setEventSource] = useState(null);
 
   // Cargar carpetas al montar
-  React.useEffect(() => {
+  useEffect(() => {
     async function fetchCarpetas() {
       try {
         const res = await axios.get('http://localhost:5000/api/listar-carpetas-imagenes');
@@ -24,88 +23,124 @@ function Arduino() {
     fetchCarpetas();
   }, []);
 
-  // Reproducir imágenes como video
-  React.useEffect(() => {
-    if (reproduciendo && imagenes.length > 0 && indice < imagenes.length - 1) {
-      const id = setTimeout(() => setIndice(i => i + 1), 200);
-      setTimerId(id);
-    } else {
-      if (timerId) clearTimeout(timerId);
-    }
+  // Limpiar EventSource al desmontar
+  useEffect(() => {
     return () => {
-      if (timerId) clearTimeout(timerId);
+      if (eventSource) {
+        eventSource.close();
+      }
     };
-    // eslint-disable-next-line
-  }, [reproduciendo, indice, imagenes]);
+  }, [eventSource]);
 
   const handleReconocer = async () => {
     if (!carpetaSeleccionada) {
       setMensaje('Selecciona una carpeta primero');
       return;
     }
+
+    // Cerrar EventSource anterior si existe
+    if (eventSource) {
+      eventSource.close();
+    }
+
     setMensaje('Procesando...');
-    setImagenes([]);
-    setIndice(0);
-    setReproduciendo(false);
+    setImagenActual(null);
+    setClasesDetectadas([]);
+
     try {
-      const res = await axios.post('http://localhost:5000/api/reconocer-carpeta', {
-        nombre_carpeta: carpetaSeleccionada
-      });
-      setImagenes(res.data.imagenes);
-      setMensaje('Reconocimiento listo.');
-      setIndice(0);
-      setReproduciendo(true);
-    } catch {
-      setMensaje('Error al procesar la carpeta');
+      const source = new EventSource(`http://localhost:5000/api/reconocer-carpeta?nombre_carpeta=${encodeURIComponent(carpetaSeleccionada)}`);
+
+      source.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+        
+        if (data.error) {
+          setMensaje(data.error);
+          source.close();
+          return;
+        }
+
+        setImagenActual(data.imagen);
+        setClasesDetectadas(data.clases);
+        setMensaje(`Procesando: ${data.nombre_archivo}`);
+      };
+
+      source.onerror = () => {
+        console.error('Error en EventSource');
+        setMensaje('Error en la conexión');
+        source.close();
+      };
+
+      setEventSource(source);
+    } catch (error) {
+      setMensaje('Error al iniciar el procesamiento');
     }
   };
 
   const handleSeleccionar = (e) => {
     setCarpetaSeleccionada(e.target.value);
-    setImagenes([]);
-    setIndice(0);
-    setReproduciendo(false);
+    setImagenActual(null);
+    setClasesDetectadas([]);
     setMensaje('');
-  };
-
-  const handlePlay = () => {
-    if (imagenes.length > 0) {
-      setReproduciendo(true);
+    if (eventSource) {
+      eventSource.close();
+      setEventSource(null);
     }
-  };
-
-  const handlePause = () => {
-    setReproduciendo(false);
-    if (timerId) clearTimeout(timerId);
   };
 
   return (
     <div className="contenedor-flexible">
-      <h1>Reconocimiento con Arduino</h1>
-      <div style={{ marginBottom: '1rem' }}>
-        <select value={carpetaSeleccionada} onChange={handleSeleccionar}>
-          <option value="">Selecciona una carpeta de imágenes</option>
-          {carpetas.map((carpeta, idx) => (
-            <option key={idx} value={carpeta}>{carpeta}</option>
-          ))}
-        </select>
-        <button onClick={handleReconocer} style={{ marginLeft: '1rem' }}>Reconocer</button>
-      </div>
-      {mensaje && <div className="mensaje-estado">{mensaje}</div>}
-      {imagenes.length > 0 && (
-        <div style={{ textAlign: 'center', marginTop: '2rem' }}>
-          <img
-            src={`data:image/jpeg;base64,${imagenes[indice]}`}
-            alt={`frame-${indice}`}
-            style={{ maxWidth: '100%', height: 'auto', borderRadius: '12px', boxShadow: '0 4px 12px #00000040' }}
-          />
-          <div style={{ marginTop: '1rem' }}>
-            <button onClick={handlePlay} disabled={reproduciendo}>Play</button>
-            <button onClick={handlePause} disabled={!reproduciendo} style={{ marginLeft: '1rem' }}>Pause</button>
-            <span style={{ marginLeft: '2rem' }}>Frame {indice + 1} / {imagenes.length}</span>
+      <div className="upload-section">
+        <h1>🎮 Reconocimiento con Arduino</h1>
+        
+        <div className="upload-form">
+          <div className="form-group">
+            <select 
+              value={carpetaSeleccionada} 
+              onChange={handleSeleccionar}
+              className="form-select"
+            >
+              <option value="">Selecciona una carpeta de imágenes</option>
+              {carpetas.map((carpeta, idx) => (
+                <option key={idx} value={carpeta}>{carpeta}</option>
+              ))}
+            </select>
+            <button 
+              onClick={handleReconocer} 
+              className="btn btn-primary"
+              style={{ marginLeft: '1rem' }}
+            >
+              Reconocer
+            </button>
           </div>
         </div>
-      )}
+
+        {mensaje && <div className="mensaje-estado">{mensaje}</div>}
+
+        {imagenActual && (
+          <div className="resultado-container">
+            <div className="imagen-container">
+              <img
+                src={`data:image/jpeg;base64,${imagenActual}`}
+                alt="frame-actual"
+                className="imagen-procesada"
+              />
+            </div>
+            
+            {clasesDetectadas.length > 0 && (
+              <div className="clases-container">
+                <h3>Clases detectadas:</h3>
+                <div className="clases-lista">
+                  {clasesDetectadas.map((clase, idx) => (
+                    <span key={idx} className="clase-badge">
+                      {clase}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

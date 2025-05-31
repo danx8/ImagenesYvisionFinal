@@ -6,6 +6,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import time
 
+# URL del Arduino
 ARDUINO_URL = "http://192.168.0.38/"
 
 model = cargarModelo()
@@ -57,7 +58,8 @@ def procesar_carpeta_con_arduino(nombre_carpeta):
         # Encender LEDs para todas las clases detectadas
         for clase in clases_detectadas:
             try:
-                session.get(ARDUINO_URL + clase)
+                response = session.get(ARDUINO_URL + clase)
+                print(f"Enviando señal para {clase}: {response.status_code}")
             except Exception as e:
                 print(f"Error al enviar petición para {clase}: {e}")
 
@@ -66,7 +68,8 @@ def procesar_carpeta_con_arduino(nombre_carpeta):
 
         # Apagar LEDs después
         try:
-            session.get(ARDUINO_URL + "off")
+            response = session.get(ARDUINO_URL + "off")
+            print(f"Apagando LEDs: {response.status_code}")
         except Exception as e:
             print(f"Error al enviar petición para apagar LEDs: {e}")
 
