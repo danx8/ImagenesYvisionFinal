@@ -19,8 +19,12 @@ class Home extends Component {
           }}
         />
         <div className="container py-5 text-center" style={{ position: 'relative', zIndex: 1 }}>
-          <h1 className="display-4 text-primary mb-3">Bienvenido a FAC</h1>
-          <p className="lead">Sube y administra tus videos fácilmente.</p>
+          <h1 className="display-3 fw-bold" style={{ color: '#ffd600', textShadow: '2px 2px 8px #000' }}>
+          Bienvenido a la Fuerza Aeroespacial Colombiana (FAC).
+          </h1>
+          <p className="lead fw-bold" style={{ fontSize: '1.5rem', color: '#fff', textShadow: '1px 1px 4px #000' }}>
+            Sube y administra tus videos fácilmente.
+          </p>
         </div>
       </>
     );

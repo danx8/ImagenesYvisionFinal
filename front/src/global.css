@@ -1,6 +1,6 @@
 :root {
-  --main-bg: #2155b6;      /* Azul principal */
-  --navbar-bg: #d25406; /* Azul aún más oscuro */
+  --main-bg: #bba5eea6;      /* Azul principal */
+  --navbar-bg: #111;         /* Negro para la barra superior */
 
   --text-main: #f80000;
   font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
@@ -13,22 +13,28 @@
 
 body, #root {
   min-height: 100vh;
-
   width: 100vw;
   background: var(--main-bg);
   color: var(--text-main);
   margin: 0;
   padding: 0;
+  /* Para que el scroll sea global */
+  overflow-y: auto;
 }
 
 .landing-container {
-  max-width: 600px;
-  margin: 40px auto;
+  max-width: 500px;
+  margin: 60px auto;
   background: rgba(6, 69, 128, 0.95);
   border-radius: 18px;
-  box-shadow: 0 2px 12px rgba(249, 21, 21, 0.1);
-  padding: 2rem 2.5rem;
+  box-shadow: 0 2px 12px rgba(21, 21, 21, 0.15);
+  padding: 2.5rem 2rem 2rem 2rem;
   color: #222;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
 }
 
 .upload-section h1 {
@@ -102,12 +108,10 @@ body, #root {
 
 .custom-navbar {
   background: var(--navbar-bg) !important;
-} 
-
-
+}
 
 .bg-primary {
-  background-color: #0e9d21 !important;
+  background-color: var(--navbar-bg) !important;
 }
 
 .imagenes-horizontal {
@@ -148,16 +152,28 @@ body, #root {
 }
 
 .contenedor-flexible {
-  max-width: 1200px;
+  max-width: 1400px;
+  min-height: calc(100vh - 80px); /* 80px navbar */
   margin: 0 auto;
-  padding: 2rem;
+  padding: 2rem 0 2rem 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: center;
 }
 
 .upload-section {
-  background: white;
+  background: #5b5dc9;
   border-radius: 12px;
-  padding: 2rem;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  padding: 2rem 1.5rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.08);
+  width: 100%;
+  max-width: 500px;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
 }
 
 .upload-section h1 {
@@ -282,12 +298,15 @@ body, #root {
 
 /* Estilos para la galería */
 .galeria-container {
+  width: 100%;
+  flex: 1;
   margin-top: 2rem;
+  /* Eliminar maxHeight y overflowY */
 }
 
 .galeria-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  grid-template-columns: repeat(4, 1fr);
   gap: 1.5rem;
   margin-bottom: 2rem;
 }
@@ -321,6 +340,7 @@ body, #root {
   padding: 1rem;
   background: #f8f9fa;
   border-radius: 8px;
+  width: 100%;
 }
 
 .numeros-pagina {
@@ -350,4 +370,56 @@ body, #root {
   background-color: #f8f9fa;
   border-color: #007bff;
   color: #007bff;
+}
+
+.navbar-nav .nav-link {
+  font-weight: 700 !important;
+  letter-spacing: 0.5px;
+}
+
+.map_modal {
+  position: fixed !important;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.85);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+}
+
+.map_content {
+  position: relative;
+  width: 90vw;
+  max-width: 700px;
+  background: white;
+  padding: 20px;
+  border-radius: 16px;
+  box-shadow: 0px 4px 32px rgba(0,0,0,0.4);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.close_button {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: red;
+  color: white;
+  border: none;
+  padding: 5px 10px;
+  border-radius: 50%;
+  width: 30px;
+  height: 30px;
+  font-size: 22px;
+  font-weight: bold;
+  cursor: pointer;
+  z-index: 1000;
+}
+
+.close_button:hover {
+  background: darkred;
 }

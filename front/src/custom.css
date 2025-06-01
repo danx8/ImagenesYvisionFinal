@@ -1,0 +1,13 @@
+{imagenModal && imagenModal.base64 && (
+  <img
+    ref={imgRef}
+    src={`data:image/jpeg;base64,${imagenModal.base64}`}
+    alt="Imagen grande"
+    className="image-modal-img"
+    onMouseDown={handleMouseDown}
+    onMouseMove={handleMouseMove}
+    onMouseUp={handleMouseUp}
+    draggable={false}
+    style={{ userSelect: 'none' }}
+  />
+)} 

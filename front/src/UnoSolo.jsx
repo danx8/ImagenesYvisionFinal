@@ -51,7 +51,7 @@ export default function UnoSolo() {
   };
 
   return (
-    <div className="contenedor-flexible">
+    <div className="landing-container">
       <div className="upload-section">
         <h1>📷 Procesador de Imagen</h1>
 
@@ -71,13 +71,13 @@ export default function UnoSolo() {
         {preview && (
           <>
             <h3 style={{ color: '#fff', marginBottom: '1rem' }}>Imagen Original</h3>
-            <img src={preview} alt="original" />
+            <img src={preview} alt="original" style={{ maxWidth: '100%', maxHeight: '400px', borderRadius: '12px', display: 'block', margin: '0 auto' }} />
           </>
         )}
         {resultado && (
           <>
             <h3 style={{ color: '#fff', marginBottom: '1rem' }}>Imagen Procesada</h3>
-            <img src={resultado} alt="resultado" />
+            <img src={resultado} alt="resultado" style={{ maxWidth: '100%', maxHeight: '400px', borderRadius: '12px', display: 'block', margin: '0 auto' }} />
           </>
         )}
 

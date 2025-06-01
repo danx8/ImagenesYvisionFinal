@@ -275,13 +275,38 @@ def listar_imagenes(nombre_carpeta):
         archivos = [f for f in os.listdir(carpeta_imagenes) if f.lower().endswith(('.jpg', '.jpeg', '.png'))]
         archivos.sort()
 
-        imagenes_base64 = []
+        imagenes_info = []
         for nombre_archivo in archivos:
             ruta_imagen = os.path.join(carpeta_imagenes, nombre_archivo)
             with open(ruta_imagen, 'rb') as img_file:
                 img_base64 = base64.b64encode(img_file.read()).decode('utf-8')
-                imagenes_base64.append(img_base64)
+                imagenes_info.append({'nombre': nombre_archivo, 'base64': img_base64})
 
-        return jsonify({'imagenes': imagenes_base64}), 200
+        return jsonify({'imagenes': imagenes_info}), 200
     except Exception as e:
         return jsonify({'error': f'Error al listar imágenes: {str(e)}'}), 500
+
+@carpetas.route('/guardar-labels', methods=['POST'])
+def guardar_labels():
+    try:
+        data = request.get_json()
+        nombre_carpeta = data.get('nombre_carpeta')
+        nombre_imagen = data.get('nombre_imagen')
+        contenido_labels = data.get('contenido_labels')
+
+        if not nombre_carpeta or not nombre_imagen or not contenido_labels:
+            return jsonify({'error': 'Faltan datos necesarios'}), 400
+
+        carpeta_imagenes = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'imagenes', nombre_carpeta)
+        carpeta_labels = os.path.join(carpeta_imagenes, 'labels')
+        os.makedirs(carpeta_labels, exist_ok=True)
+
+        nombre_label = os.path.splitext(nombre_imagen)[0] + '.txt'
+        ruta_label = os.path.join(carpeta_labels, nombre_label)
+
+        with open(ruta_label, 'w') as f:
+            f.write(contenido_labels)
+
+        return jsonify({'mensaje': 'Labels guardados exitosamente'}), 200
+    except Exception as e:
+        return jsonify({'error': f'Error al guardar labels: {str(e)}'}), 500
